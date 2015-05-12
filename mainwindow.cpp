@@ -12,3 +12,8 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+void MainWindow::on_lineEdit_returnPressed()
+{
+    ui->textBrowser->append(ui->lineEdit->text());
+}
