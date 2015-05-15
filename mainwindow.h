@@ -2,6 +2,17 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QVector>
+#include <QString>
+#include <cmath>
+#include "Vec.h"
+#include "Mat.h"
+
+typedef struct {
+	double degreeX;
+	double degreeY;
+	double coefficient;
+} term;
 
 namespace Ui {
 class MainWindow;
@@ -14,6 +25,7 @@ class MainWindow : public QMainWindow
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
+	static double calculateFunction(QVector<term> func,Vec point);
 
 private slots:
 	void on_lineEdit_returnPressed();
@@ -32,6 +44,9 @@ private slots:
 
 private:
 	Ui::MainWindow *ui;
+	QVector<term> f;
+	QVector<double> interval;
+	Vec initialPoint;
 };
 
 #endif // MAINWINDOW_H
