@@ -51,7 +51,7 @@ private:
 	Vec initialPoint;
 
 	Vec deltaf(QVector< QVector<term> >& df,Vec& xi);
-	QVector<term> variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x);
+//	QVector<term> variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x);
 };
 
 #endif // MAINWINDOW_H

@@ -439,7 +439,7 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 			ui->textBrowser->append("epslon1");
 			return;
 		}
-		else if((X[i+1]-X[i]).norm()<=epslon1){
+		else if((X[i+1]-X[i]).norm()<=epslon2){
 			ui->textBrowser->append("epslon2");
 			return;
 		}
