@@ -135,7 +135,6 @@ void MainWindow::on_lineEdit_returnPressed()
 
 		//output
 		QString fStr("f(x) = ");
-		//int varCount = 0;//計算用到幾個變數，用來決定f(x)或f(x,y)(但投影片好像只有f(x))
 		for(int i=0;i<f.size();++i){
 			QString termStr;
 			if(f[i].coefficient > 0 && i != 0)
