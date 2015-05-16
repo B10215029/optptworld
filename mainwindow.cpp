@@ -126,11 +126,20 @@ void MainWindow::on_lineEdit_returnPressed()//input
 			QString termStr;
 			if(f[i].coefficient >= 0 && i != 0)
 				termStr += '+';
-			termStr += QString::number(f[i].coefficient);
-			if(f[i].degrees[0] != 0)
-				termStr += QString(" * X^%1").arg(f[i].degrees[0]);
-			if(f[i].degrees[1] != 0)
-				termStr += QString(" * Y^%1").arg(f[i].degrees[1]);
+			if(f[i].coefficient != 1)
+				termStr += QString::number(f[i].coefficient);
+			if(f[i].degrees[0] != 0){
+				if(f[i].degrees[0] == 1)
+					termStr += QString("X");
+				else
+					termStr += QString("X^%1").arg(f[i].degrees[0]);
+			}
+			if(f[i].degrees[1] != 0){
+				if(f[i].degrees[1] == 1)
+					termStr += QString("Y");
+				else
+					termStr += QString("Y^%1").arg(f[i].degrees[1]);
+			}
 			fStr += ' ' + termStr;
 		}
 		ui->textBrowser->append(fStr);
@@ -247,6 +256,7 @@ void MainWindow::on_pushButton_Golden_clicked()
 	double a = interval[0];
 	double b = interval[1];
 	double c1,c2,fc1,fc2,ba;
+	ui->textBrowser->append("a\tb\tc1\tc2\tf(c1)\tf(c2)\tupdate\tb - a");
 	while(1){
 		QString ostr("%1\t%2\t%3\t%4\t%5\t%6\t%7 = c%8\t%9");
 		ostr = ostr.arg(a).arg(b);
@@ -289,23 +299,25 @@ void MainWindow::on_pushButton_Powell_clicked()
 	while(1){
 		Vec x1 = point;
 		double fx1 = calculateFunction(f, x1);
-		QVector<term> fa1 = pIntoF(f, point, s[0]);
+
+		QVector<term> fa1 = pIntoF(f, x1, s[0]);
 		double a1 = goldenSection(fa1, interval[0], interval[1]);
 		Vec x2(2);
-		x2.setData(point.getData(0)+a1*s[0].getData(0),0);
-		x2.setData(point.getData(1)+a1*s[0].getData(1),1);
-//		double fx2 = calculateFunction(f, x2);
+		x2.setData(x1.getData(0)+a1*s[0].getData(0),0);
+		x2.setData(x1.getData(1)+a1*s[0].getData(1),1);
+		double fx2 = calculateFunction(f, x2);
 		QVector<term> fa2 = pIntoF(f, x2, s[1]);
 		double a2 = goldenSection(fa2, interval[0], interval[1]);
 		Vec x3(2);
 		x3.setData(x2.getData(0)+a2*s[1].getData(0),0);
 		x3.setData(x2.getData(1)+a2*s[1].getData(1),1);
-//		double fx3 = calculateFunction(f, x3);
+		double fx3 = calculateFunction(f, x3);
 		Vec s3(2);
 		s3.setData(a1*s[0].getData(0)+a2*s[1].getData(0),0);
 		s3.setData(a1*s[0].getData(1)+a2*s[1].getData(1),1);
 		s.push_back(s3);
 		s.remove(0);
+
 		QVector<term> fa3 = pIntoF(f, x3, s[1]);
 		double a3 = goldenSection(fa3, interval[0], interval[1]);
 		Vec x4(2);
@@ -390,6 +402,7 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 		//jump //compute length[i]
 		double a=interval[0],b=interval[1];
 		length.push_back(goldenSection(pIntoF(f,X[i],direction[i]),a,b));
+		length[i]=goldenSection(pIntoF(f,X[i],direction[i]),a,b);
 		X.push_back(X[i]+length[i]*direction[i]);
 		//check
 		if(calculateFunction(f,X[i+1])-calculateFunction(f,X[i])<=epslon1){
