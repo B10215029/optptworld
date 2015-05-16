@@ -30,6 +30,8 @@ public:
 	static QVector<term> polPow(QVector<term>& func,int e);
 	static QVector<term> polAdd(QVector<term>& funcA,QVector<term>& funcB);
 	static QVector<term> pIntoF(QVector<term>& func,Vec& pos,Vec& dir);
+	static Mat hessian(QVector<term>& func);
+	static QVector<term> diff(QVector<term> func,int xi);
 
 private slots:
 	void on_lineEdit_returnPressed();

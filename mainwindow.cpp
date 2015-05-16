@@ -151,6 +151,8 @@ double MainWindow::calculateFunction(QVector<term> func,Vec point)
 	double result = 0;
 	for(int i=0;i<func.size();++i){
 		double x=1;
+		if(func[i].coefficient == 0)
+			continue;
 		for(int j=0;j<func[i].degrees.size();++j)
 			x*=pow(point.getData(j), func[i].degrees[j]);
 		result +=x*func[i].coefficient;
@@ -331,28 +333,37 @@ void MainWindow::on_pushButton_Powell_clicked()
 	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
+Mat MainWindow::hessian(QVector<term>& func){
+	Mat r(numberOfVar,numberOfVar);
+	for(int i=0;i<numberOfVar;++i){
+		QVector<term> di = diff(func, i);
+		for(int j=0;j<numberOfVar;++j){
+			QVector<term> dj = diff(di, j);
+			//助教說微兩次之後不會有變數的所以我就代0
+			r.setData(calculateFunction(dj, Vec(numberOfVar)), i, j);
+		}
+	}
+	return r;
+}
+
 void MainWindow::on_pushButton_Newton_clicked()
 {
-	//只是測試一下pintof
-	//結果是好像沒問題
-	QVector<Vec> s;
-	s.push_back(Vec(2));
-	s.push_back(Vec(2));
-	s[0].setData(1.0, 0);
-	s[0].setData(0.0, 1);
-	s[1].setData(0.0, 0);
-	s[1].setData(1.0, 1);
-	Vec x1 = initialPoint;
-	double fx1 = calculateFunction(f, x1);
-	QVector<term> fa1 = pIntoF(f, x1, s[0]);
-	double a1 = goldenSection(fa1, interval[0], interval[1]);
-	Vec x2(2);
-	x2.setData(x1.getData(0)+a1*s[0].getData(0),0);
-	x2.setData(x1.getData(1)+a1*s[0].getData(1),1);
-	double fx2 = calculateFunction(f, x2);
-	ui->textBrowser->append(QString::number(a1));
-	ui->textBrowser->append(QString::number(fx1));
-	ui->textBrowser->append(QString::number(fx2));
+	Vec point = initialPoint;
+	QVector<QVector<term>> df;
+	for(int i=0;i<numberOfVar;++i)
+		df.push_back(diff(f,i));
+	ui->textBrowser->append(QString::fromStdString(hessian(f).toString()));
+	Mat hessInv = hessian(f).Inverse();
+	while(1){
+		Vec dfx(numberOfVar);
+		for(int i=0;i<numberOfVar;++i)
+			dfx.setData(calculateFunction(df[i], point), i);
+		Vec dx = (hessInv * dfx).getColData(0);
+		point = point - dx;
+		if(dx.norm()<epslon1)
+			break;
+	}
+	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Quasi_clicked()
@@ -365,7 +376,7 @@ void MainWindow::on_pushButton_Steep_clicked()
 
 }
 
-QVector<term> diff(QVector<term> func,int xi){
+QVector<term> MainWindow::diff(QVector<term> func,int xi){
 	QVector<term> fdxi=func;
 	for(int i=0;i<func.size();i++){
 		fdxi[i].coefficient*=fdxi[i].degrees[xi];
