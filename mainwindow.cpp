@@ -150,196 +150,106 @@ void MainWindow::on_lineEdit_returnPressed()
 	}
 }
 
-//QVector<term> MainWindow::toPostfix(QString& inputStr,int varCount){
-//	QVector<term> result;
-//	QStringList opList;
-//	for(int i=0;i<inputStr.size();i++){
-//		if(inputStr[i].isDigit()){//coefficient
-//			double num=inputStr[i].toLatin1()-48,fraction=0;
-//			while(inputStr[i+1].isDigit())
-//				num=num*10+inputStr[++i].toLatin1()-48;
-//			if(inputStr[i+1]=='.'){
-//				i++;
-//				int count=1;
-//				while(inputStr[i+1].isDigit())
-//					fraction+=(inputStr[++i].toLatin1()-48)/pow(10,count++);
-//				num+=fraction;
-//			}
+double MainWindow::goldenSection(QVector<term> func, double intervalA, double intervalB){
+	double a = intervalA;
+	double b = intervalB;
+	double c1,c2,fc1,fc2;
+	while(1){
+		c1 = a + (b-a)*GOLDEN_RATE;
+		c2 = a + (b-a)*(1-GOLDEN_RATE);
+		Vec c1v(2);
+		c1v.setData(c1, 0);
+		Vec c2v(2);
+		c2v.setData(c2, 0);
+		fc1 = calculateFunction(func, c1v);
+		fc2 = calculateFunction(func, c2v);
+		if(fc1 > fc2)
+			a=c1;
+		else
+			b=c2;
+		if(b-a<epslon1)
+			break;
+	}
+	return c1;
+}
 
-//			term t;
-//			t.coefficient=num;
-//			if(++i>=inputStr.size()){//end
-//				for(int j=0;j<varCount;j++)
-//					t.degrees.push_back(0);
-//				return result;
-//			}
-//			//////////x
-//			else if(inputStr[i]=='x'){
-//				if(++i>=inputStr.size()){//end
-//					for(int j=0;j<varCount;j++){
-//						if(j==0)
-//							t.degrees.push_back(1);
-//						t.degrees.push_back(0);
-//					}
-//					return result;
-//				}
-//				else if(inputStr[i]=='^'){//次方後的數字
-//					double degreeNum=inputStr[i].toLatin1()-48,degreeFraction=0;
-//					if(inputStr[++i].isDigit()){//一般數字直接寫法
-//						while(inputStr[i+1].isDigit())
-//							degreeNum=degreeNum*10+inputStr[++i].toLatin1()-48;
-//						if(inputStr[i+1]=='.'){
-//							i++;
-//							int degreeNumCount=1;
-//							while(inputStr[i+1].isDigit())
-//								degreeFraction+=(inputStr[++i].toLatin1()-48)/pow(10,degreeNumCount++);
-//							degreeNum+=degreeFraction;
-//						}
-//					}
-//					else if(inputStr[i]=='('){//(0.5)之類的寫法
-//						if(inputStr[++i].isDigit()){
-//							while(inputStr[i+1].isDigit())
-//								degreeNum=degreeNum*10+inputStr[++i].toLatin1()-48;
-//							if(inputStr[i+1]=='.'){
-//								i++;
-//								int degreeNumCount=1;
-//								while(inputStr[i+1].isDigit())
-//									degreeFraction+=(inputStr[++i].toLatin1()-48)/pow(10,degreeNumCount++);
-//								degreeNum+=degreeFraction;
-//							}
-//						}
-//						i++;//inputStr[i]==')'
-//					}
-//					t.degrees.push_back(degreeNum);
-//				}
-//			}
-//			//////////y
-//			else if(inputStr[i]=='y'){
-//				if(++i>=inputStr.size()){//end
-//					if(t.degrees.count()==0)//no x
-//						t.degrees.push_back(0);
-//					for(int j=1;j<varCount;j++){
-//						if(j==1)
-//							t.degrees.push_back(1);
-//						t.degrees.push_back(0);
-//					}
-//					return result;
-//				}
-//				else if(inputStr[i]=='^'){//次方後的數字
-//					double degreeNum=inputStr[i].toLatin1()-48,degreeFraction=0;
-//					if(inputStr[++i].isDigit()){//一般數字直接寫法
-//						while(inputStr[i+1].isDigit())
-//							degreeNum=degreeNum*10+inputStr[++i].toLatin1()-48;
-//						if(inputStr[i+1]=='.'){
-//							i++;
-//							int degreeNumCount=1;
-//							while(inputStr[i+1].isDigit())
-//								degreeFraction+=(inputStr[++i].toLatin1()-48)/pow(10,degreeNumCount++);
-//							degreeNum+=degreeFraction;
-//						}
-//					}
-//					else if(inputStr[i]=='('){//(0.5)之類的寫法
-//						if(inputStr[++i].isDigit()){
-//							while(inputStr[i+1].isDigit())
-//								degreeNum=degreeNum*10+inputStr[++i].toLatin1()-48;
-//							if(inputStr[i+1]=='.'){
-//								i++;
-//								int degreeNumCount=1;
-//								while(inputStr[i+1].isDigit())
-//									degreeFraction+=(inputStr[++i].toLatin1()-48)/pow(10,degreeNumCount++);
-//								degreeNum+=degreeFraction;
-//							}
-//						}
-//						i++;//inputStr[i]==')'
-//					}
-//					t.degrees.push_back(degreeNum);
-//				}
-//			}
-//			result.push_back(t);
-//		}
-//		else if(inputStr[i]=='.'){
-//			double fraction=0;
-//			int count=1;
-//			while(inputStr[i+1].isDigit())
-//				fraction+=(inputStr[++i].toLatin1()-48)/pow(10,count++);
+QVector<term> MainWindow::polMul(QVector<term> funcA, QVector<term> funcB){
+	QVector<term> funcR;
+	for(int i=0;i<funcA.size();++i){
+		for(int j=0;j<funcB.size();++j){
+			term t;
+			t.degrees.push_back(funcA[i].degrees[0]+funcB[j].degrees[0]);
+			t.degrees.push_back(funcA[i].degrees[1]+funcB[j].degrees[1]);
+			t.coefficient = funcA[i].coefficient * funcB[j].coefficient;
+			funcR.push_back(t);
+		}
+	}
+	return funcR;
+}
 
-//			for(int i=0;i<varCount;i++)
-//				t.degrees.push_back(0);
-//			t.coefficient=fraction;
-//			result.push_back(t);
-//		}
-//		else if(inputStr[i]=='x'){
-//			for(int i=0;i<varCount;i++)
-//				t.degrees.push_back(0);
-//			t.coefficient=fraction;
-//			result.push_back(t);
-//		}
-//		else if(inputStr[i]=='y'){
-//			int indexNum,indexOffset=-97;
-//			while(inputStr[++i]=='z') //mza=m[25]
-//				indexOffset+=25;
-//			if(!inputStr[i].isLetter()) throw "Input Error!";
-//			indexNum=inputStr[i].toLatin1()+indexOffset;
-//			if(indexNum>=m.size()) throw "V Out Of Range!";
-//			result.push(m[indexNum]);
-//		}
-//		else if(inputStr[i]=='+'){
-//			if(opList.isEmpty()) opList+="+";
-//			else if(opList.last()=="(") opList+="+";
-//			else{
-//				QString inst=opList.last();
-//				opList.removeLast();
-//				calc(inst,result);
-//				opList+="+";
-//			}
-//		}
-//		else if(inputStr[i]=='-'){
-//			if(opList.isEmpty()) opList+="-";
-//			else if(opList.last()=="(") opList+="-";
-//			else{
-//				QString inst=opList.last();
-//				opList.removeLast();
-//				calc(inst,result);
-//				opList+="-";
-//			}
-//		}
-//		else if(inputStr[i]=='*'){
-//			if(opList.isEmpty()) opList+="*";
-//			else if(opList.last()=="+"||opList.last()=="-"||opList.last()=="(") opList+="*";
-//			else{
-//				QString inst=opList.last();
-//				opList.removeLast();
-//				calc(inst,result);
-//				opList+="*";
-//			}
-//		}
-//		else if(inputStr[i]=='/'){
-//			if(opList.isEmpty()) opList+="/";
-//			else if(opList.last()=="+"||opList.last()=="-"||opList.last()=="(") opList+="/";
-//			else{
-//				QString inst=opList.last();
-//				opList.removeLast();
-//				calc(inst,result);
-//				opList+="/";
-//			}
-//		}
-//		else if(inputStr[i]=='('){
-//			opList+="(";
-//		}
-//	}
-//}
+QVector<term> MainWindow::polPow(QVector<term> func, int e){
+	QVector<term> funcR;
+	term t;
+	t.degrees.push_back(0);
+	t.degrees.push_back(0);
+	t.coefficient = 1;
+	funcR.push_back(t);
+	for(int i=0;i<e;i++)
+		funcR = polMul(funcR, func);
+	return funcR;
+}
+
+QVector<term> MainWindow::polAdd(QVector<term> funcA, QVector<term> funcB){
+	QVector<term> funcR;
+	for(int i=0;i<funcA.size();++i)
+		funcR.push_back(funcA[i]);
+	for(int i=0;i<funcB.size();++i)
+		funcR.push_back(funcB[i]);
+	return funcR;
+}
+
+QVector<term> MainWindow::pIntoF(QVector<term> func,Vec pos, Vec dir){
+	QVector<term> funcR;
+	for(int i=0;i<func.size();++i){
+		QVector<term> fc;//coefficient function
+		QVector<term> fx;//x function
+		QVector<term> fy;//y function
+		term tt;//temp term
+		tt.degrees.push_back(0);
+		tt.degrees.push_back(0);
+		tt.coefficient = func[i].coefficient;
+		fc.push_back(tt);
+
+		tt.degrees[0] = 1;
+		tt.coefficient = dir.getData(0);
+		fx.push_back(tt);
+		tt.degrees[0] = 0;
+		tt.coefficient = pos.getData(0);
+		fx.push_back(tt);
+		fx = polPow(fx, (int)func[i].degrees[0]);
+
+		tt.degrees[0] = 1;
+		tt.coefficient = dir.getData(1);
+		fy.push_back(tt);
+		tt.degrees[0] = 0;
+		tt.coefficient = pos.getData(1);
+		fy.push_back(tt);
+		fy = polPow(fy, (int)func[i].degrees[1]);
+
+		fc = polMul(fc, fx);
+		fc = polMul(fc, fy);
+		funcR = polAdd(funcR, fc);
+	}
+	return funcR;
+}
 
 void MainWindow::on_pushButton_Golden_clicked()
 {
 	double a = interval[0];
 	double b = interval[1];
-	double c1;
-	double c2;
-	double fc1;
-	double fc2;
-	double ba;
+	double c1,c2,fc1, fc2,ba;
 	while(1){
-		QString ostr("%1\t%2\t%3\t%4\t%5\t%6\t%7 = C%8\t%9");
+		QString ostr("%1\t%2\t%3\t%4\t%5\t%6\t%7 = c%8\t%9");
 		ostr = ostr.arg(a).arg(b);
 		c1 = a + (b-a)*GOLDEN_RATE;
 		c2 = a + (b-a)*(1-GOLDEN_RATE);
@@ -369,7 +279,45 @@ void MainWindow::on_pushButton_Golden_clicked()
 
 void MainWindow::on_pushButton_Powell_clicked()
 {
-
+	Vec point(initialPoint);
+	QVector<Vec> s;
+	s.push_back(Vec(2));
+	s.push_back(Vec(2));
+	s[0].setData(1.0, 0);
+	s[0].setData(0.0, 1);
+	s[1].setData(0.0, 0);
+	s[1].setData(1.0, 1);
+	while(1){
+		Vec x1 = point;
+		double fx1 = calculateFunction(f, x1);
+		QVector<term> fa1 = pIntoF(f, point, s[0]);
+		double a1 = goldenSection(fa1, interval[0], interval[1]);
+		Vec x2(2);
+		x2.setData(point.getData(0)+a1*s[0].getData(0),0);
+		x2.setData(point.getData(1)+a1*s[0].getData(1),1);
+		double fx2 = calculateFunction(f, x2);
+		QVector<term> fa2 = pIntoF(f, x2, s[1]);
+		double a2 = goldenSection(fa2, interval[0], interval[1]);
+		Vec x3(2);
+		x3.setData(x2.getData(0)+a2*s[1].getData(0),0);
+		x3.setData(x2.getData(1)+a2*s[1].getData(1),1);
+		double fx3 = calculateFunction(f, x3);
+		Vec s3(2);
+		s3.setData(a1*s[0].getData(0)+a2*s[1].getData(0),0);
+		s3.setData(a1*s[0].getData(1)+a2*s[1].getData(1),1);
+		s.push_back(s3);
+		s.remove(0);
+		QVector<term> fa3 = pIntoF(f, x3, s[1]);
+		double a3 = goldenSection(fa3, interval[0], interval[1]);
+		Vec x4(2);
+		x4.setData(x3.getData(0)+a3*s[1].getData(0),0);
+		x4.setData(x3.getData(1)+a3*s[1].getData(1),1);
+		double fx4 = calculateFunction(f, x4);
+		point = x4;
+		if(abs(x1.norm()-x4.norm())<epslon1)
+			break;
+	}
+	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Newton_clicked()
