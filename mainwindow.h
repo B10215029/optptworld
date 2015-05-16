@@ -42,13 +42,15 @@ private slots:
 
 	void on_pushButton_Conjugate_clicked();
 
+	void on_actionClear_triggered();
+
 private:
 	Ui::MainWindow *ui;
 	QVector<term> f;
 	QVector<double> interval;
 	Vec initialPoint;
 
-	Vec deltaf(QVector<QVector<term>>& df,Vec& xi);
+	Vec deltaf(QVector< QVector<term> >& df,Vec& xi);
 	QVector<term> variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x);
 };
 
