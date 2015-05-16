@@ -68,6 +68,7 @@ void MainWindow::on_lineEdit_returnPressed()
 		QString str = ui->lineEdit->text().split('=')[1];
 		int currentVar = 0;
 		bool readExp = false;
+		bool readedNum = false;
 		term currentTerm;
 		for(int vn=0;vn<numberOfVar;++vn)
 			currentTerm.degrees.push_back(0);
@@ -78,10 +79,9 @@ void MainWindow::on_lineEdit_returnPressed()
 				continue;
 			else if(str[i].isDigit() || str[i]=='+' || str[i]=='-'){
 				double sign = 1,num = 0;
-				bool zeroAppear=false;
 				int dot = 0;
 				if(str[i]=='+' || str[i]=='-'){
-					if(!readExp){
+					if(!readExp && (f.size()!=0 || readedNum)){
 						f.push_back(currentTerm);
 						for(int vn=0;vn<numberOfVar;++vn)
 							currentTerm.degrees[vn] = 0;
@@ -90,6 +90,7 @@ void MainWindow::on_lineEdit_returnPressed()
 					}
 					sign = str[i++]=='+'?1:-1;
 				}
+				readedNum = true;
 				for(;i<str.size();++i){//number
 					if(str[i] == '.')
 						dot = 1;
@@ -97,8 +98,6 @@ void MainWindow::on_lineEdit_returnPressed()
 						if(dot == 0)
 							num = num*10 + (str[i].toLatin1() - (int)'0');
 						else{
-							if(str[i]=='0')
-								zeroAppear=true;
 							num += pow(10.0, -dot)*(str[i].toLatin1() - (int)'0');
 							dot++;
 						}
@@ -109,11 +108,11 @@ void MainWindow::on_lineEdit_returnPressed()
 					}
 				}
 				num *= sign;
-				if(currentVar == 0)
-					currentTerm.coefficient = num;
-				else{//有變數存在
-					if(num == 0 && !zeroAppear)
+				if(currentVar == 0){
+					if(str[i]=='+' || str[i]=='-')
 						currentTerm.coefficient = sign;
+					else
+						currentTerm.coefficient = num;
 				}
 				if(readExp){
 					currentTerm.degrees[currentVar-1] = num;
@@ -297,12 +296,14 @@ void MainWindow::on_pushButton_Powell_clicked()
 		x2.setData(point.getData(0)+a1*s[0].getData(0),0);
 		x2.setData(point.getData(1)+a1*s[0].getData(1),1);
 		double fx2 = calculateFunction(f, x2);
+
 		QVector<term> fa2 = pIntoF(f, x2, s[1]);
 		double a2 = goldenSection(fa2, interval[0], interval[1]);
 		Vec x3(2);
 		x3.setData(x2.getData(0)+a2*s[1].getData(0),0);
 		x3.setData(x2.getData(1)+a2*s[1].getData(1),1);
 		double fx3 = calculateFunction(f, x3);
+
 		Vec s3(2);
 		s3.setData(a1*s[0].getData(0)+a2*s[1].getData(0),0);
 		s3.setData(a1*s[0].getData(1)+a2*s[1].getData(1),1);
@@ -314,8 +315,9 @@ void MainWindow::on_pushButton_Powell_clicked()
 		x4.setData(x3.getData(0)+a3*s[1].getData(0),0);
 		x4.setData(x3.getData(1)+a3*s[1].getData(1),1);
 		double fx4 = calculateFunction(f, x4);
+
 		point = x4;
-		if(abs(x1.norm()-x4.norm())<epslon1)
+		if(abs(fx1-fx4)<epslon1 || abs(x1.norm()-x4.norm())<epslon2)
 			break;
 	}
 	ui->textBrowser->append(QString::fromStdString(point.toString()));
@@ -323,7 +325,26 @@ void MainWindow::on_pushButton_Powell_clicked()
 
 void MainWindow::on_pushButton_Newton_clicked()
 {
-
+	//只是測試一下pintof
+	//結果是好像沒問題
+	QVector<Vec> s;
+	s.push_back(Vec(2));
+	s.push_back(Vec(2));
+	s[0].setData(1.0, 0);
+	s[0].setData(0.0, 1);
+	s[1].setData(0.0, 0);
+	s[1].setData(1.0, 1);
+	Vec x1 = initialPoint;
+	double fx1 = calculateFunction(f, x1);
+	QVector<term> fa1 = pIntoF(f, x1, s[0]);
+	double a1 = goldenSection(fa1, interval[0], interval[1]);
+	Vec x2(2);
+	x2.setData(x1.getData(0)+a1*s[0].getData(0),0);
+	x2.setData(x1.getData(1)+a1*s[0].getData(1),1);
+	double fx2 = calculateFunction(f, x2);
+	ui->textBrowser->append(QString::number(a1));
+	ui->textBrowser->append(QString::number(fx1));
+	ui->textBrowser->append(QString::number(fx2));
 }
 
 void MainWindow::on_pushButton_Quasi_clicked()
