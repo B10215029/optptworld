@@ -9,8 +9,7 @@
 #include "Mat.h"
 
 typedef struct {
-	double degreeX;
-	double degreeY;
+	QVector<double> degrees;
 	double coefficient;
 } term;
 
@@ -26,6 +25,7 @@ public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
 	static double calculateFunction(QVector<term> func,Vec point);
+	QVector<term> toPostfix(QString& inputStr,int varCount);
 
 private slots:
 	void on_lineEdit_returnPressed();
@@ -47,6 +47,9 @@ private:
 	QVector<term> f;
 	QVector<double> interval;
 	Vec initialPoint;
+
+	Vec deltaf(QVector<QVector<term>>& df,Vec& xi);
+	QVector<term> variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x);
 };
 
 #endif // MAINWINDOW_H
