@@ -9,8 +9,7 @@
 #include "Mat.h"
 
 typedef struct {
-	double degreeX;
-	double degreeY;
+	QVector<double> degrees;
 	double coefficient;
 } term;
 
@@ -47,6 +46,9 @@ private:
 	QVector<term> f;
 	QVector<double> interval;
 	Vec initialPoint;
+
+	Vec deltaf(QVector<QVector<term>>& df,Vec& xi);
+	QVector<term> variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x);
 };
 
 #endif // MAINWINDOW_H
