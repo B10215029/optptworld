@@ -20,19 +20,7 @@ MainWindow::~MainWindow()
 	delete ui;
 }
 
-double MainWindow::calculateFunction(QVector<term> func,Vec point)
-{
-	double result = 0;
-	for(int i=0;i<func.size();++i){
-		double x=1;
-		for(int j=0;j<func[i].degrees.size();++j)
-			x*=pow(point.getData(j), func[i].degrees[j]);
-		result +=x*func[i].coefficient;
-	}
-	return result;
-}
-
-void MainWindow::on_lineEdit_returnPressed()
+void MainWindow::on_lineEdit_returnPressed()//input
 {
 	QStringList args = ui->lineEdit->text().split(' ');
 	if(args.size() == 2 && args[0] == "interval"){
@@ -137,7 +125,7 @@ void MainWindow::on_lineEdit_returnPressed()
 		QString fStr("f(x) = ");
 		for(int i=0;i<f.size();++i){
 			QString termStr;
-			if(f[i].coefficient > 0 && i != 0)
+			if(f[i].coefficient >= 0 && i != 0)
 				termStr += '+';
 			termStr += QString::number(f[i].coefficient);
 			if(f[i].degrees[0] != 0)
@@ -150,7 +138,19 @@ void MainWindow::on_lineEdit_returnPressed()
 	}
 }
 
-double MainWindow::goldenSection(QVector<term> func, double intervalA, double intervalB){
+double MainWindow::calculateFunction(QVector<term> func,Vec point)
+{
+	double result = 0;
+	for(int i=0;i<func.size();++i){
+		double x=1;
+		for(int j=0;j<func[i].degrees.size();++j)
+			x*=pow(point.getData(j), func[i].degrees[j]);
+		result +=x*func[i].coefficient;
+	}
+	return result;
+}
+
+double MainWindow::goldenSection(QVector<term> func,double intervalA,double intervalB){
 	double a = intervalA;
 	double b = intervalB;
 	double c1,c2,fc1,fc2;
@@ -173,13 +173,13 @@ double MainWindow::goldenSection(QVector<term> func, double intervalA, double in
 	return c1;
 }
 
-QVector<term> MainWindow::polMul(QVector<term> funcA, QVector<term> funcB){
+QVector<term> MainWindow::polMul(QVector<term>& funcA,QVector<term>& funcB){
 	QVector<term> funcR;
 	for(int i=0;i<funcA.size();++i){
 		for(int j=0;j<funcB.size();++j){
 			term t;
-			t.degrees.push_back(funcA[i].degrees[0]+funcB[j].degrees[0]);
-			t.degrees.push_back(funcA[i].degrees[1]+funcB[j].degrees[1]);
+			for(int vn=0;vn<numberOfVar;++vn)
+				t.degrees.push_back(funcA[i].degrees[vn]+funcB[j].degrees[vn]);
 			t.coefficient = funcA[i].coefficient * funcB[j].coefficient;
 			funcR.push_back(t);
 		}
@@ -187,11 +187,11 @@ QVector<term> MainWindow::polMul(QVector<term> funcA, QVector<term> funcB){
 	return funcR;
 }
 
-QVector<term> MainWindow::polPow(QVector<term> func, int e){
+QVector<term> MainWindow::polPow(QVector<term>& func,int e){
 	QVector<term> funcR;
 	term t;
-	t.degrees.push_back(0);
-	t.degrees.push_back(0);
+	for(int vn=0;vn<numberOfVar;++vn)
+		t.degrees.push_back(0);
 	t.coefficient = 1;
 	funcR.push_back(t);
 	for(int i=0;i<e;i++)
@@ -199,7 +199,7 @@ QVector<term> MainWindow::polPow(QVector<term> func, int e){
 	return funcR;
 }
 
-QVector<term> MainWindow::polAdd(QVector<term> funcA, QVector<term> funcB){
+QVector<term> MainWindow::polAdd(QVector<term>& funcA,QVector<term>& funcB){//combine
 	QVector<term> funcR;
 	for(int i=0;i<funcA.size();++i)
 		funcR.push_back(funcA[i]);
@@ -208,15 +208,15 @@ QVector<term> MainWindow::polAdd(QVector<term> funcA, QVector<term> funcB){
 	return funcR;
 }
 
-QVector<term> MainWindow::pIntoF(QVector<term> func,Vec pos, Vec dir){
+QVector<term> MainWindow::pIntoF(QVector<term>& func,Vec& pos,Vec& dir){
 	QVector<term> funcR;
 	for(int i=0;i<func.size();++i){
 		QVector<term> fc;//coefficient function
 		QVector<term> fx;//x function
 		QVector<term> fy;//y function
 		term tt;//temp term
-		tt.degrees.push_back(0);
-		tt.degrees.push_back(0);
+		for(int vn=0;vn<numberOfVar;++vn)
+			tt.degrees.push_back(0);
 		tt.coefficient = func[i].coefficient;
 		fc.push_back(tt);
 
@@ -247,7 +247,7 @@ void MainWindow::on_pushButton_Golden_clicked()
 {
 	double a = interval[0];
 	double b = interval[1];
-	double c1,c2,fc1, fc2,ba;
+	double c1,c2,fc1,fc2,ba;
 	while(1){
 		QString ostr("%1\t%2\t%3\t%4\t%5\t%6\t%7 = c%8\t%9");
 		ostr = ostr.arg(a).arg(b);
@@ -289,19 +289,19 @@ void MainWindow::on_pushButton_Powell_clicked()
 	s[1].setData(1.0, 1);
 	while(1){
 		Vec x1 = point;
-		double fx1 = calculateFunction(f, x1);
+//		double fx1 = calculateFunction(f, x1);
 		QVector<term> fa1 = pIntoF(f, point, s[0]);
 		double a1 = goldenSection(fa1, interval[0], interval[1]);
 		Vec x2(2);
 		x2.setData(point.getData(0)+a1*s[0].getData(0),0);
 		x2.setData(point.getData(1)+a1*s[0].getData(1),1);
-		double fx2 = calculateFunction(f, x2);
+//		double fx2 = calculateFunction(f, x2);
 		QVector<term> fa2 = pIntoF(f, x2, s[1]);
 		double a2 = goldenSection(fa2, interval[0], interval[1]);
 		Vec x3(2);
 		x3.setData(x2.getData(0)+a2*s[1].getData(0),0);
 		x3.setData(x2.getData(1)+a2*s[1].getData(1),1);
-		double fx3 = calculateFunction(f, x3);
+//		double fx3 = calculateFunction(f, x3);
 		Vec s3(2);
 		s3.setData(a1*s[0].getData(0)+a2*s[1].getData(0),0);
 		s3.setData(a1*s[0].getData(1)+a2*s[1].getData(1),1);
@@ -312,7 +312,7 @@ void MainWindow::on_pushButton_Powell_clicked()
 		Vec x4(2);
 		x4.setData(x3.getData(0)+a3*s[1].getData(0),0);
 		x4.setData(x3.getData(1)+a3*s[1].getData(1),1);
-		double fx4 = calculateFunction(f, x4);
+//		double fx4 = calculateFunction(f, x4);
 		point = x4;
 		if(abs(x1.norm()-x4.norm())<epslon1)
 			break;
@@ -351,15 +351,6 @@ Vec MainWindow::deltaf(QVector< QVector<term> >& df,Vec& xi){
 	return v;
 }
 
-//QVector<term> MainWindow::variableInFuncToNewFunc(QVector<term> func,QVector<QString>& x){//代入另一變數
-//	QVector<term> newf=func;
-//	QString s;
-//	for(int i=0;i<newf.size();i++){
-//		s=;
-//	}
-//	return newf;
-//}
-
 void MainWindow::on_pushButton_Conjugate_clicked()
 {
 	QVector<Vec> X,direction;
@@ -379,7 +370,8 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 			direction[i]=-1*deltaf(df,X[i])+beta*direction[i-1];
 		}
 		//jump //compute length[i]
-
+		double a=interval[0],b=interval[1];
+		length[i]=goldenSection(pIntoF(f,X[i],direction[i]),a,b);
 		X.push_back(X[i]+length[i]*direction[i]);
 		//check
 		if(calculateFunction(f,X[i+1])-calculateFunction(f,X[i])<=epslon1){
@@ -395,6 +387,8 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 			return;
 		}
 	}
+
+	ui->textBrowser->append(QString::fromStdString(X.last().toString()));
 }
 
 void MainWindow::on_actionClear_triggered()

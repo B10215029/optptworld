@@ -25,11 +25,11 @@ public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
 	static double calculateFunction(QVector<term> func,Vec point);
-	static double goldenSection(QVector<term> func, double intervalA, double intervalB);
-	static QVector<term> polMul(QVector<term> funcA, QVector<term> funcB);
-	static QVector<term> polPow(QVector<term> func, int e);
-	static QVector<term> polAdd(QVector<term> funcA, QVector<term> funcB);
-	static QVector<term> pIntoF(QVector<term> func, Vec pos, Vec dir);
+	static double goldenSection(QVector<term> func,double intervalA,double intervalB);
+	static QVector<term> polMul(QVector<term>& funcA,QVector<term>& funcB);
+	static QVector<term> polPow(QVector<term>& func,int e);
+	static QVector<term> polAdd(QVector<term>& funcA,QVector<term>& funcB);
+	static QVector<term> pIntoF(QVector<term>& func,Vec& pos,Vec& dir);
 
 private slots:
 	void on_lineEdit_returnPressed();
@@ -55,7 +55,6 @@ private:
 	Vec initialPoint;
 
 	Vec deltaf(QVector< QVector<term> >& df,Vec& xi);
-//	QVector<term> variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x);
 };
 
 #endif // MAINWINDOW_H
