@@ -299,20 +299,25 @@ void MainWindow::on_pushButton_Powell_clicked()
 	while(1){
 		Vec x1 = point;
 		double fx1 = calculateFunction(f, x1);
-
 		QVector<term> fa1 = pIntoF(f, x1, s[0]);
 		double a1 = goldenSection(fa1, interval[0], interval[1]);
+		ui->textBrowser->append("X1="+QString::fromStdString(x1.toString())+"\tf(X1)="+QString::number(fx1));
+
 		Vec x2(2);
 		x2.setData(x1.getData(0)+a1*s[0].getData(0),0);
 		x2.setData(x1.getData(1)+a1*s[0].getData(1),1);
 		double fx2 = calculateFunction(f, x2);
 		QVector<term> fa2 = pIntoF(f, x2, s[1]);
 		double a2 = goldenSection(fa2, interval[0], interval[1]);
+		ui->textBrowser->append("X2="+QString::fromStdString(x2.toString())+"\tf(X2)="+QString::number(fx2));
+
 		Vec x3(2);
 		x3.setData(x2.getData(0)+a2*s[1].getData(0),0);
 		x3.setData(x2.getData(1)+a2*s[1].getData(1),1);
 		double fx3 = calculateFunction(f, x3);
-		Vec s3(2);
+		ui->textBrowser->append("X3="+QString::fromStdString(x3.toString())+"\tf(X3)="+QString::number(fx3));
+
+		Vec s3(2);//new direction
 		s3.setData(a1*s[0].getData(0)+a2*s[1].getData(0),0);
 		s3.setData(a1*s[0].getData(1)+a2*s[1].getData(1),1);
 		s.push_back(s3);
@@ -325,10 +330,11 @@ void MainWindow::on_pushButton_Powell_clicked()
 		x4.setData(x3.getData(1)+a3*s[1].getData(1),1);
 		double fx4 = calculateFunction(f, x4);
 		point = x4;
+		ui->textBrowser->append("X4="+QString::fromStdString(x4.toString())+"\tf(X4)="+QString::number(fx4));
+
 		if(abs(fx1-fx4)<epslon1 || abs(x1.norm()-x4.norm())<epslon2)
 			break;
 	}
-	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Newton_clicked()
@@ -400,9 +406,7 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 			direction.push_back(-1*deltaf(df,X[i])+beta*direction[i-1]);
 		}
 		//jump //compute length[i]
-		double a=interval[0],b=interval[1];
-		length.push_back(goldenSection(pIntoF(f,X[i],direction[i]),a,b));
-		length[i]=goldenSection(pIntoF(f,X[i],direction[i]),a,b);
+		length.push_back(goldenSection(pIntoF(f,X[i],direction[i]),interval[0],interval[1]));
 		X.push_back(X[i]+length[i]*direction[i]);
 		//check
 		if(calculateFunction(f,X[i+1])-calculateFunction(f,X[i])<=epslon1){
