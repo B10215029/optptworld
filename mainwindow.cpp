@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#define numberOfVar 2
 #define GOLDEN_RATE 0.3819660112501051
 #define number_of_iterations 99
 #define epslon1 0.0000001
@@ -68,35 +69,37 @@ void MainWindow::on_lineEdit_returnPressed()
 		int currentVar = 0;
 		bool readExp = false;
 		term currentTerm;
-		currentTerm.degrees.push_back(0);
-		currentTerm.degrees.push_back(0);
+		for(int vn=0;vn<numberOfVar;++vn)
+			currentTerm.degrees.push_back(0);
 		currentTerm.coefficient = 1;
+
 		for(int i=0;i<str.size();++i){
 			if(QString(" (*)").indexOf(str[i])!=-1)
 				continue;
 			else if(str[i].isDigit() || str[i]=='+' || str[i]=='-'){
-				double sign = 1;
-				double num = 0;
+				double sign = 1,num = 0;
+				bool zeroAppear=false;
 				int dot = 0;
 				if(str[i]=='+' || str[i]=='-'){
 					if(!readExp){
 						f.push_back(currentTerm);
-						currentTerm.degrees[0] = 0;
-						currentTerm.degrees[1] = 0;
+						for(int vn=0;vn<numberOfVar;++vn)
+							currentTerm.degrees[vn] = 0;
 						currentTerm.coefficient = 1;
 						currentVar = 0;
 					}
 					sign = str[i++]=='+'?1:-1;
 				}
-				for(;i<str.size();++i){
+				for(;i<str.size();++i){//number
 					if(str[i] == '.')
 						dot = 1;
 					else if(str[i].isDigit()){
-						if(dot == 0){
-							num = num*10 + ((int)str[i].toLatin1() - (int)'0');
-						}
+						if(dot == 0)
+							num = num*10 + (str[i].toLatin1() - (int)'0');
 						else{
-							num += pow(10.0, -dot)*((int)str[i].toLatin1() - (int)'0');
+							if(str[i]=='0')
+								zeroAppear=true;
+							num += pow(10.0, -dot)*(str[i].toLatin1() - (int)'0');
 							dot++;
 						}
 					}
@@ -106,31 +109,27 @@ void MainWindow::on_lineEdit_returnPressed()
 					}
 				}
 				num *= sign;
-				//ui->textBrowser->append(QString::number(num));
-				if(currentVar == 0){
+				if(currentVar == 0)
 					currentTerm.coefficient = num;
-					if(num == 0)
+				else{//有變數存在
+					if(num == 0 && !zeroAppear)
 						currentTerm.coefficient = sign;
 				}
 				if(readExp){
-					if(currentVar == 1)
-						currentTerm.degrees[0] = num;
-					else if(currentVar == 2)
-						currentTerm.degrees[1] = num;
+					currentTerm.degrees[currentVar-1] = num;
 					readExp = false;
 				}
 			}
 			else if(str[i].toLower() == 'x'){
 				currentVar = 1;
-				currentTerm.degrees[0] = 1;
+				currentTerm.degrees[currentVar-1] = 1;
 			}
 			else if(str[i].toLower() == 'y'){
 				currentVar = 2;
-				currentTerm.degrees[1] = 1;
+				currentTerm.degrees[currentVar-1] = 1;
 			}
-			else if(str[i] == '^'){
+			else if(str[i] == '^')
 				readExp = true;
-			}
 		}
 		f.push_back(currentTerm);
 
@@ -139,7 +138,7 @@ void MainWindow::on_lineEdit_returnPressed()
 		//int varCount = 0;//計算用到幾個變數，用來決定f(x)或f(x,y)(但投影片好像只有f(x))
 		for(int i=0;i<f.size();++i){
 			QString termStr;
-			if(f[i].coefficient >= 0 && i != 0)
+			if(f[i].coefficient > 0 && i != 0)
 				termStr += '+';
 			termStr += QString::number(f[i].coefficient);
 			if(f[i].degrees[0] != 0)
@@ -346,24 +345,28 @@ QVector<term> diff(QVector<term> func,int xi){
 	return fdxi;
 }
 
-QVector<term> MainWindow::variableInFuncToNewFunc(QVector<term>& func,QVector<QString>& x){
-	QVector<term> newf;
-	return newf;
-}
-
-Vec MainWindow::deltaf(QVector<QVector<term>>& df,Vec& xi){
+Vec MainWindow::deltaf(QVector< QVector<term> >& df,Vec& xi){
 	Vec v(f[0].degrees.size());
 	for(int i=0;i<f.size();i++)
 		v.setData(calculateFunction(df[i],xi),i);
 	return v;
 }
 
+//QVector<term> MainWindow::variableInFuncToNewFunc(QVector<term> func,QVector<QString>& x){//代入另一變數
+//	QVector<term> newf=func;
+//	QString s;
+//	for(int i=0;i<newf.size();i++){
+//		s=;
+//	}
+//	return newf;
+//}
+
 void MainWindow::on_pushButton_Conjugate_clicked()
 {
 	QVector<Vec> X,direction;
 	X.push_back(initialPoint);
 
-	QVector<QVector<term>> df;
+	QVector< QVector<term> > df;
 	for(int i=0;i<f.size();i++)
 		df.push_back(diff(f,i));
 
@@ -376,7 +379,7 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 			double beta=deltaf(df,X[i])*deltaf(df,X[i])/(deltaf(df,X[i-1])*deltaf(df,X[i-1]));
 			direction[i]=-1*deltaf(df,X[i])+beta*direction[i-1];
 		}
-		//jump
+		//jump //compute length[i]
 
 		X.push_back(X[i]+length[i]*direction[i]);
 		//check
@@ -395,16 +398,7 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+void MainWindow::on_actionClear_triggered()
+{
+	ui->textBrowser->clear();
+}
