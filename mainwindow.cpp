@@ -4,9 +4,9 @@
 #define numberOfVar 2
 #define GOLDEN_RATE 0.3819660112501051
 #define number_of_iterations 99
-#define epslon1 0.0000001
-#define epslon2 0.0000001
-#define epslon3 0.0000001
+#define epslon1 0.00000000001
+#define epslon2 0.00000000001
+#define epslon3 0.00000000001
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -56,6 +56,7 @@ void MainWindow::on_lineEdit_returnPressed()//input
 		QString str = ui->lineEdit->text().split('=')[1];
 		int currentVar = 0;
 		bool readExp = false;
+		bool readedNum = false;
 		term currentTerm;
 		for(int vn=0;vn<numberOfVar;++vn)
 			currentTerm.degrees.push_back(0);
@@ -66,10 +67,9 @@ void MainWindow::on_lineEdit_returnPressed()//input
 				continue;
 			else if(str[i].isDigit() || str[i]=='+' || str[i]=='-'){
 				double sign = 1,num = 0;
-				bool zeroAppear=false;
 				int dot = 0;
 				if(str[i]=='+' || str[i]=='-'){
-					if(!readExp){
+					if(!readExp && (f.size()!=0 || readedNum)){
 						f.push_back(currentTerm);
 						for(int vn=0;vn<numberOfVar;++vn)
 							currentTerm.degrees[vn] = 0;
@@ -78,6 +78,7 @@ void MainWindow::on_lineEdit_returnPressed()//input
 					}
 					sign = str[i++]=='+'?1:-1;
 				}
+				readedNum = true;
 				for(;i<str.size();++i){//number
 					if(str[i] == '.')
 						dot = 1;
@@ -85,8 +86,6 @@ void MainWindow::on_lineEdit_returnPressed()//input
 						if(dot == 0)
 							num = num*10 + (str[i].toLatin1() - (int)'0');
 						else{
-							if(str[i]=='0')
-								zeroAppear=true;
 							num += pow(10.0, -dot)*(str[i].toLatin1() - (int)'0');
 							dot++;
 						}
@@ -97,11 +96,11 @@ void MainWindow::on_lineEdit_returnPressed()//input
 					}
 				}
 				num *= sign;
-				if(currentVar == 0)
-					currentTerm.coefficient = num;
-				else{//有變數存在
-					if(num == 0 && !zeroAppear)
+				if(currentVar == 0){
+					if(str[i]=='+' || str[i]=='-')
 						currentTerm.coefficient = sign;
+					else
+						currentTerm.coefficient = num;
 				}
 				if(readExp){
 					currentTerm.degrees[currentVar-1] = num;
@@ -289,7 +288,7 @@ void MainWindow::on_pushButton_Powell_clicked()
 	s[1].setData(1.0, 1);
 	while(1){
 		Vec x1 = point;
-//		double fx1 = calculateFunction(f, x1);
+		double fx1 = calculateFunction(f, x1);
 		QVector<term> fa1 = pIntoF(f, point, s[0]);
 		double a1 = goldenSection(fa1, interval[0], interval[1]);
 		Vec x2(2);
@@ -312,9 +311,9 @@ void MainWindow::on_pushButton_Powell_clicked()
 		Vec x4(2);
 		x4.setData(x3.getData(0)+a3*s[1].getData(0),0);
 		x4.setData(x3.getData(1)+a3*s[1].getData(1),1);
-//		double fx4 = calculateFunction(f, x4);
+		double fx4 = calculateFunction(f, x4);
 		point = x4;
-		if(abs(x1.norm()-x4.norm())<epslon1)
+		if(abs(fx1-fx4)<epslon1 || abs(x1.norm()-x4.norm())<epslon2)
 			break;
 	}
 	ui->textBrowser->append(QString::fromStdString(point.toString()));
@@ -322,7 +321,26 @@ void MainWindow::on_pushButton_Powell_clicked()
 
 void MainWindow::on_pushButton_Newton_clicked()
 {
-
+	//只是測試一下pintof
+	//結果是好像沒問題
+	QVector<Vec> s;
+	s.push_back(Vec(2));
+	s.push_back(Vec(2));
+	s[0].setData(1.0, 0);
+	s[0].setData(0.0, 1);
+	s[1].setData(0.0, 0);
+	s[1].setData(1.0, 1);
+	Vec x1 = initialPoint;
+	double fx1 = calculateFunction(f, x1);
+	QVector<term> fa1 = pIntoF(f, x1, s[0]);
+	double a1 = goldenSection(fa1, interval[0], interval[1]);
+	Vec x2(2);
+	x2.setData(x1.getData(0)+a1*s[0].getData(0),0);
+	x2.setData(x1.getData(1)+a1*s[0].getData(1),1);
+	double fx2 = calculateFunction(f, x2);
+	ui->textBrowser->append(QString::number(a1));
+	ui->textBrowser->append(QString::number(fx1));
+	ui->textBrowser->append(QString::number(fx2));
 }
 
 void MainWindow::on_pushButton_Quasi_clicked()
@@ -345,8 +363,8 @@ QVector<term> diff(QVector<term> func,int xi){
 }
 
 Vec MainWindow::deltaf(QVector< QVector<term> >& df,Vec& xi){
-	Vec v(f[0].degrees.size());
-	for(int i=0;i<f.size();i++)
+	Vec v(numberOfVar);
+	for(int i=0;i<numberOfVar;i++)
 		v.setData(calculateFunction(df[i],xi),i);
 	return v;
 }
@@ -357,38 +375,40 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 	X.push_back(initialPoint);
 
 	QVector< QVector<term> > df;
-	for(int i=0;i<f.size();i++)
+	for(int i=0;i<numberOfVar;i++)
 		df.push_back(diff(f,i));
 
 	QVector<double> length;
 
 	for(int i=0;i<number_of_iterations;i++){
 		if(i==0)
-			direction[0]=-1*deltaf(df,X[i]);
+			direction.push_back(-1*deltaf(df,X[i]));
 		else{
 			double beta=deltaf(df,X[i])*deltaf(df,X[i])/(deltaf(df,X[i-1])*deltaf(df,X[i-1]));
-			direction[i]=-1*deltaf(df,X[i])+beta*direction[i-1];
+			direction.push_back(-1*deltaf(df,X[i])+beta*direction[i-1]);
 		}
 		//jump //compute length[i]
 		double a=interval[0],b=interval[1];
-		length[i]=goldenSection(pIntoF(f,X[i],direction[i]),a,b);
+		length.push_back(goldenSection(pIntoF(f,X[i],direction[i]),a,b));
 		X.push_back(X[i]+length[i]*direction[i]);
 		//check
 		if(calculateFunction(f,X[i+1])-calculateFunction(f,X[i])<=epslon1){
 			ui->textBrowser->append("epslon1");
+			ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 			return;
 		}
 		else if((X[i+1]-X[i]).norm()<=epslon2){
 			ui->textBrowser->append("epslon2");
+			ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 			return;
 		}
 		else if(deltaf(df,X[i+1])*deltaf(df,X[i+1])<=epslon3){
 			ui->textBrowser->append("epslon3");
+			ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 			return;
 		}
 	}
-
-	ui->textBrowser->append(QString::fromStdString(X.last().toString()));
+	ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 }
 
 void MainWindow::on_actionClear_triggered()
