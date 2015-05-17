@@ -390,7 +390,6 @@ void MainWindow::on_pushButton_Newton_clicked()
 			break;
 		}
 	}
-	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Quasi_clicked()
