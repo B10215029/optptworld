@@ -4,9 +4,9 @@
 #define numberOfVar 2
 #define GOLDEN_RATE 0.3819660112501051
 #define number_of_iterations 99
-#define epslon1 0.00000000001
-#define epslon2 0.00000000001
-#define epslon3 0.00000000001
+#define epslon1 0.000000001
+#define epslon2 0.000000001
+#define epslon3 0.000000001
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -335,8 +335,14 @@ void MainWindow::on_pushButton_Powell_clicked()
 		s.push_back(s3);
 		s.remove(0);
 
-		if(abs(fx4-fx3)<epslon1 || (x4-x3).norm()<epslon2)
-			break;
+		if(fabs(fx4-fx1)<epslon1){
+			ui->textBrowser->append("epslon1");
+			return;
+		}
+		else if((x4-x1).norm()<epslon2){
+			ui->textBrowser->append("epslon2");
+			return;
+		}
 	}
 }
 
@@ -383,7 +389,28 @@ void MainWindow::on_pushButton_Quasi_clicked()
 
 void MainWindow::on_pushButton_Steep_clicked()
 {
-
+	Vec X(initialPoint);
+	ui->textBrowser->append("X=("+QString::fromStdString(X.toString())+")\tf(X)="+QString::number(calculateFunction(f,X)));
+	QVector< QVector<term> > df;
+	for(int i=0;i<numberOfVar;i++)
+		df.push_back(diff(f,i));
+	while(1){
+		Vec direction=-1*deltaf(df,X);
+		if(direction.norm()<0.00001){
+			ui->textBrowser->append("epslon=0.00001");
+			return;
+		}
+		else if(direction.norm()<0.0001){
+			ui->textBrowser->append("epslon=0.0001");
+			return;
+		}
+		else{
+			double length=goldenSection(pIntoF(f,X,direction),interval[0],interval[1]);
+			X=X+length*direction;
+			ui->textBrowser->append("len="+QString::number(length)+"\tdirection=("+QString::fromStdString(direction.toString())+")");
+			ui->textBrowser->append("X=("+QString::fromStdString(X.toString())+")\tf(X)="+QString::number(calculateFunction(f,X)));
+		}
+	}
 }
 
 QVector<term> MainWindow::diff(QVector<term> func,int xi){
