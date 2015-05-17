@@ -13,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
+	interval.push_back(-100);
+	interval.push_back(100);
 }
 
 MainWindow::~MainWindow()
@@ -126,7 +128,7 @@ void MainWindow::on_lineEdit_returnPressed()//input
 			QString termStr;
 			if(f[i].coefficient >= 0 && i != 0)
 				termStr += '+';
-			if(f[i].coefficient != 1 || f[i].degrees[0] == 0 && f[i].degrees[1] == 0)
+			if(f[i].coefficient != 1 || (f[i].degrees[0] == 0 && f[i].degrees[1] == 0))
 				termStr += QString::number(f[i].coefficient);
 			if(f[i].degrees[0] != 0){
 				if(f[i].degrees[0] == 1)
@@ -299,7 +301,10 @@ void MainWindow::on_pushButton_Powell_clicked()
 	s[0].setData(0.0, 1);
 	s[1].setData(0.0, 0);
 	s[1].setData(1.0, 1);
+	int iterCount=0;
 	while(1){
+		iterCount++;
+		ui->textBrowser->append("Cycle:"+QString::number(iterCount));
 		Vec x1 = point;
 		double fx1 = calculateFunction(f, x1);
 		ui->textBrowser->append("X1=("+QString::fromStdString(x1.toString())+")\tf(X1)="+QString::number(fx1));
@@ -335,11 +340,11 @@ void MainWindow::on_pushButton_Powell_clicked()
 		s.push_back(s3);
 		s.remove(0);
 
-		if(fabs(fx4-fx1)<epslon1){
+		if(fabs(fx4-fx3)<epslon1){
 			ui->textBrowser->append("epslon1");
 			return;
 		}
-		else if((x4-x1).norm()<epslon2){
+		else if((x4-x3).norm()<epslon2){
 			ui->textBrowser->append("epslon2");
 			return;
 		}
@@ -368,7 +373,10 @@ void MainWindow::on_pushButton_Newton_clicked()
 	ui->textBrowser->append("Hessian matrix:\n"+QString::fromStdString(hessian(f, point).toString()));
 	Mat hessInv = hessian(f, point).Inverse();
 	ui->textBrowser->append("Hessian inverse:\n"+QString::fromStdString(hessInv.toString()));
+	int iterCount=0;
 	while(1){
+		iterCount++;
+		ui->textBrowser->append("Cycle:"+QString::number(iterCount));
 		hessInv = hessian(f, point).Inverse();
 		Vec dfx(numberOfVar);//deltaf
 		for(int i=0;i<numberOfVar;++i)
@@ -388,13 +396,20 @@ void MainWindow::on_pushButton_Newton_clicked()
 void MainWindow::on_pushButton_Quasi_clicked()
 {
 	ui->textBrowser->append("========<Quasi-Newton Method>========");
+	if(ui->actionDFP->isChecked())
+		ui->textBrowser->append("========DFP========");
+	else if(ui->actionBFGS->isChecked())
+		ui->textBrowser->append("========BFGS========");
 	Vec point = initialPoint;
 	QVector< QVector<term> > df;
 	for(int i=0;i<numberOfVar;++i)
 		df.push_back(diff(f,i));
 	Vec dfx=deltaf(df,point);
 	Mat hess = Mat::identity(numberOfVar);
+	int iterCount=0;
 	while(1){
+		iterCount++;
+		ui->textBrowser->append("Cycle:"+QString::number(iterCount));
 		Vec hdfx = (hess * dfx).getColData(0)*-1;
 		double alpha = goldenSection(pIntoF(f, point, hdfx), interval[0], interval[1]);
 		ui->textBrowser->append("alpha="+QString::number(alpha));
@@ -405,16 +420,19 @@ void MainWindow::on_pushButton_Quasi_clicked()
 		Mat dx(dx_vec);
 		Mat ddfx(ddfx_vec);
 		//DFP
-		Mat a = (dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0);
-		Mat b = (hess*ddfx.trans()*ddfx*hess.trans())/(ddfx*hess*ddfx.trans()).getRowData(0).getData(0)*-1;
-		hess = hess + a + b;
+		if(ui->actionDFP->isChecked()){
+			Mat a = (dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0);
+			Mat b = (hess*ddfx.trans()*ddfx*hess.trans())/(ddfx*hess*ddfx.trans()).getRowData(0).getData(0)*-1;
+			hess = hess + a + b;
+		}
 		//BFGS
-//		hess = hess - (hess*ddfx.trans()*dx+dx.trans()*ddfx*hess)/(dx*ddfx.trans()).getRowData(0).getData(0)
-//				+((dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0))*(1+((ddfx*hess*ddfx.trans())/(dx*ddfx.trans()).getRowData(0).getData(0)).getRowData(0).getData(0));
-		//////////
+		else if(ui->actionBFGS->isChecked())
+			hess = hess - (hess*ddfx.trans()*dx+dx.trans()*ddfx*hess)/(dx*ddfx.trans()).getRowData(0).getData(0)
+					+((dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0))*
+					(1+((ddfx*hess*ddfx.trans())/(dx*ddfx.trans()).getRowData(0).getData(0)).getRowData(0).getData(0));
 		dfx = dfxk1;
 		point = xk1;
-		if(dx.getColData(0).norm()<epslon1){
+		if(dx.getRowData(0).norm() < epslon1){
 			ui->textBrowser->append("epslon1");
 			break;
 		}
@@ -429,14 +447,13 @@ void MainWindow::on_pushButton_Steep_clicked()
 	QVector< QVector<term> > df;
 	for(int i=0;i<numberOfVar;i++)
 		df.push_back(diff(f,i));
+	int iterCount=0;
 	while(1){
+		iterCount++;
+		ui->textBrowser->append("Cycle:"+QString::number(iterCount));
 		Vec direction=-1*deltaf(df,X);
-		if(direction.norm()<0.00001){
-			ui->textBrowser->append("epslon=0.00001");
-			return;
-		}
-		else if(direction.norm()<0.0001){
-			ui->textBrowser->append("epslon=0.0001");
+		if(direction.norm()<0.000001){
+			ui->textBrowser->append("epslon=0.000001");
 			return;
 		}
 		else{
@@ -508,4 +525,16 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 void MainWindow::on_actionClear_triggered()
 {
 	ui->textBrowser->clear();
+}
+
+void MainWindow::on_actionDFP_triggered()
+{
+	ui->actionDFP->setChecked(true);
+	ui->actionBFGS->setChecked(false);
+}
+
+void MainWindow::on_actionBFGS_triggered()
+{
+	ui->actionDFP->setChecked(false);
+	ui->actionBFGS->setChecked(true);
 }

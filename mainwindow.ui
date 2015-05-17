@@ -90,7 +90,15 @@
     <property name="title">
      <string>tool</string>
     </property>
+    <widget class="QMenu" name="menuQuasi_Newton_Method">
+     <property name="title">
+      <string>Quasi-Newton Method</string>
+     </property>
+     <addaction name="actionDFP"/>
+     <addaction name="actionBFGS"/>
+    </widget>
     <addaction name="actionClear"/>
+    <addaction name="menuQuasi_Newton_Method"/>
    </widget>
    <addaction name="menuTool"/>
   </widget>
@@ -98,6 +106,25 @@
   <action name="actionClear">
    <property name="text">
     <string>clear</string>
+   </property>
+  </action>
+  <action name="actionDFP">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>DFP</string>
+   </property>
+  </action>
+  <action name="actionBFGS">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>BFGS</string>
    </property>
   </action>
  </widget>

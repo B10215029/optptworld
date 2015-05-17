@@ -50,6 +50,10 @@ private slots:
 
 	void on_actionClear_triggered();
 
+	void on_actionDFP_triggered();
+
+	void on_actionBFGS_triggered();
+
 private:
 	Ui::MainWindow *ui;
 	QVector<term> f;
