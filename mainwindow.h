@@ -56,7 +56,7 @@ private:
 	QVector<double> interval;
 	Vec initialPoint;
 
-	Vec deltaf(QVector< QVector<term> >& df,Vec& xi);
+	Vec deltaf(QVector< QVector<term> >& d2f,Vec& xi);
 };
 
 #endif // MAINWINDOW_H

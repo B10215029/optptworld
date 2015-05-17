@@ -377,33 +377,33 @@ void MainWindow::on_pushButton_Newton_clicked()
 		ui->textBrowser->append("deltaX=("+QString::fromStdString((-1*dx).toString())+")");
 		point = point - dx;
 		ui->textBrowser->append("X=("+QString::fromStdString(point.toString())+")\tf(X)="+QString::number(calculateFunction(f,point)));
-		if(dx.norm()<epslon1)
+		if(dx.norm()<epslon1){
+			ui->textBrowser->append("epslon1");
 			break;
+		}
 	}
 	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Quasi_clicked()
 {
+	ui->textBrowser->append("========<Quasi-Newton Method>========");
 	Vec point = initialPoint;
-	QVector<QVector<term>> df;
+	QVector< QVector<term> > df;
 	for(int i=0;i<numberOfVar;++i)
 		df.push_back(diff(f,i));
-	Vec dfx(numberOfVar);
-	for(int i=0;i<numberOfVar;++i)
-		dfx.setData(calculateFunction(df[i], point), i);
+	Vec dfx=deltaf(df,point);
 	Mat hess = Mat::identity(numberOfVar);
-	int it;
-	for(it=0;it<number_of_iterations;++it){
+	while(1){
 		Vec hdfx = (hess * dfx).getColData(0)*-1;
-		QVector<term> fa = pIntoF(f, point, hdfx);
-		double alpha = goldenSection(fa, interval[0], interval[1]);
+		double alpha = goldenSection(pIntoF(f, point, hdfx), interval[0], interval[1]);
+		ui->textBrowser->append("alpha="+QString::number(alpha));
 		Vec xk1 = point + hdfx * alpha;
-		Vec dfxk1(numberOfVar);
-		for(int i=0;i<numberOfVar;++i)
-			dfxk1.setData(calculateFunction(df[i], xk1), i);
-		Mat dx(xk1-point);
-		Mat ddfx(dfxk1-dfx);
+		ui->textBrowser->append("X=("+QString::fromStdString(xk1.toString())+")\tf(X)="+QString::number(calculateFunction(f,xk1)));
+		Vec dfxk1=deltaf(df,xk1),dx_vec=xk1-point,ddfx_vec;
+		ddfx_vec=dfxk1-dfx;
+		Mat dx(dx_vec);
+		Mat ddfx(ddfx_vec);
 		//DFP
 		Mat a = (dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0);
 		Mat b = (hess*ddfx.trans()*ddfx*hess.trans())/(ddfx*hess*ddfx.trans()).getRowData(0).getData(0)*-1;
@@ -414,12 +414,11 @@ void MainWindow::on_pushButton_Quasi_clicked()
 		//////////
 		dfx = dfxk1;
 		point = xk1;
-		if(dx.getRowData(0).norm() < epslon1)
+		if(dx.getColData(0).norm()<epslon1){
+			ui->textBrowser->append("epslon1");
 			break;
+		}
 	}
-	if(it==number_of_iterations)
-		ui->textBrowser->append("number_of_iterations!");
-	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Steep_clicked()
