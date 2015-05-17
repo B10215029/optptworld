@@ -290,8 +290,9 @@ void MainWindow::on_pushButton_Golden_clicked()
 
 void MainWindow::on_pushButton_Powell_clicked()
 {
+	ui->textBrowser->append("========<Powell’s Method>========");
 	Vec point(initialPoint);
-	QVector<Vec> s;
+	QVector<Vec> s;//direction
 	s.push_back(Vec(2));
 	s.push_back(Vec(2));
 	s[0].setData(1.0, 0);
@@ -301,36 +302,42 @@ void MainWindow::on_pushButton_Powell_clicked()
 	while(1){
 		Vec x1 = point;
 		double fx1 = calculateFunction(f, x1);
+		ui->textBrowser->append("X1=("+QString::fromStdString(x1.toString())+")\tf(X1)="+QString::number(fx1));
 
 		QVector<term> fa1 = pIntoF(f, x1, s[0]);
 		double a1 = goldenSection(fa1, interval[0], interval[1]);
-		Vec x2(2);
-		x2.setData(x1.getData(0)+a1*s[0].getData(0),0);
-		x2.setData(x1.getData(1)+a1*s[0].getData(1),1);
+		ui->textBrowser->append("a1="+QString::number(a1));
+		Vec x2;
+		x2=x1+a1*s[0];
 		double fx2 = calculateFunction(f, x2);
+		ui->textBrowser->append("X2=("+QString::fromStdString(x2.toString())+")\tf(X2)="+QString::number(fx2));
+
 		QVector<term> fa2 = pIntoF(f, x2, s[1]);
 		double a2 = goldenSection(fa2, interval[0], interval[1]);
-		Vec x3(2);
-		x3.setData(x2.getData(0)+a2*s[1].getData(0),0);
-		x3.setData(x2.getData(1)+a2*s[1].getData(1),1);
+		ui->textBrowser->append("a2="+QString::number(a2));
+		Vec x3;
+		x3=x2+a2*s[1];
 		double fx3 = calculateFunction(f, x3);
-		Vec s3(2);
-		s3.setData(a1*s[0].getData(0)+a2*s[1].getData(0),0);
-		s3.setData(a1*s[0].getData(1)+a2*s[1].getData(1),1);
+		ui->textBrowser->append("X3=("+QString::fromStdString(x3.toString())+")\tf(X3)="+QString::number(fx3));
+
+		Vec s3;//new direction
+		s3=a1*s[0]+a2*s[1];
+		ui->textBrowser->append("S3=("+QString::fromStdString(s3.toString())+")");
+		QVector<term> fa3 = pIntoF(f, x3, s3);
+		double a3 = goldenSection(fa3, interval[0], interval[1]);
+		ui->textBrowser->append("a3="+QString::number(a3));
+		Vec x4;
+		x4=x3+a3*s3;
+		double fx4 = calculateFunction(f, x4);
+		ui->textBrowser->append("X4=("+QString::fromStdString(x4.toString())+")\tf(X4)="+QString::number(fx4));
+
+		point = x4;
 		s.push_back(s3);
 		s.remove(0);
 
-		QVector<term> fa3 = pIntoF(f, x3, s[1]);
-		double a3 = goldenSection(fa3, interval[0], interval[1]);
-		Vec x4(2);
-		x4.setData(x3.getData(0)+a3*s[1].getData(0),0);
-		x4.setData(x3.getData(1)+a3*s[1].getData(1),1);
-		double fx4 = calculateFunction(f, x4);
-		point = x4;
-		if(abs(fx1-fx4)<epslon1 || abs(x1.norm()-x4.norm())<epslon2)
+		if(abs(fx4-fx3)<epslon1 || (x4-x3).norm()<epslon2)
 			break;
 	}
-	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 Mat MainWindow::hessian(QVector<term>& func,Vec point){
@@ -347,17 +354,23 @@ Mat MainWindow::hessian(QVector<term>& func,Vec point){
 
 void MainWindow::on_pushButton_Newton_clicked()
 {
+	ui->textBrowser->append("========<Newton Method>========");
 	Vec point = initialPoint;
-	QVector<QVector<term>> df;
+	QVector< QVector<term> > df;
 	for(int i=0;i<numberOfVar;++i)
 		df.push_back(diff(f,i));
+	ui->textBrowser->append("Hessian matrix:\n"+QString::fromStdString(hessian(f, point).toString()));
+	Mat hessInv = hessian(f, point).Inverse();
+	ui->textBrowser->append("Hessian inverse:\n"+QString::fromStdString(hessInv.toString()));
 	while(1){
-		Mat hessInv = hessian(f, point).Inverse();
-		Vec dfx(numberOfVar);
+		hessInv = hessian(f, point).Inverse();
+		Vec dfx(numberOfVar);//deltaf
 		for(int i=0;i<numberOfVar;++i)
 			dfx.setData(calculateFunction(df[i], point), i);
 		Vec dx = (hessInv * dfx).getColData(0);
+		ui->textBrowser->append("deltaX=("+QString::fromStdString((-1*dx).toString())+")");
 		point = point - dx;
+		ui->textBrowser->append("X=("+QString::fromStdString(point.toString())+")\tf(X)="+QString::number(calculateFunction(f,point)));
 		if(dx.norm()<epslon1)
 			break;
 	}
@@ -421,6 +434,7 @@ Vec MainWindow::deltaf(QVector< QVector<term> >& df,Vec& xi){
 
 void MainWindow::on_pushButton_Conjugate_clicked()
 {
+	ui->textBrowser->append("========<Conjugate Gradient Method>========");
 	QVector<Vec> X,direction;
 	X.push_back(initialPoint);
 
@@ -431,6 +445,7 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 	QVector<double> length;
 
 	for(int i=0;i<number_of_iterations;i++){
+		ui->textBrowser->append("i="+QString::number(i));
 		if(i==0)
 			direction.push_back(-1*deltaf(df,X[i]));
 		else{
@@ -438,28 +453,24 @@ void MainWindow::on_pushButton_Conjugate_clicked()
 			direction.push_back(-1*deltaf(df,X[i])+beta*direction[i-1]);
 		}
 		//jump //compute length[i]
-		double a=interval[0],b=interval[1];
-		length.push_back(goldenSection(pIntoF(f,X[i],direction[i]),a,b));
-		length[i]=goldenSection(pIntoF(f,X[i],direction[i]),a,b);
+		length.push_back(goldenSection(pIntoF(f,X[i],direction[i]),interval[0],interval[1]));
 		X.push_back(X[i]+length[i]*direction[i]);
+		ui->textBrowser->append("len="+QString::number(length[i])+"\tdirection=("+QString::fromStdString(direction[i].toString())+")");
+		ui->textBrowser->append("X=("+QString::fromStdString(X.last().toString())+")\tf(X)="+QString::number(calculateFunction(f,X.last())));
 		//check
-		if(calculateFunction(f,X[i+1])-calculateFunction(f,X[i])<=epslon1){
+		if(fabs(calculateFunction(f,X[i+1])-calculateFunction(f,X[i]))<=epslon1){
 			ui->textBrowser->append("epslon1");
-			ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 			return;
 		}
 		else if((X[i+1]-X[i]).norm()<=epslon2){
 			ui->textBrowser->append("epslon2");
-			ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 			return;
 		}
 		else if(deltaf(df,X[i+1])*deltaf(df,X[i+1])<=epslon3){
 			ui->textBrowser->append("epslon3");
-			ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 			return;
 		}
 	}
-	ui->textBrowser->append("X="+QString::fromStdString(X.last().toString())+"\tf(X)="+QString::number(calculateFunction(f,X.last())));
 }
 
 void MainWindow::on_actionClear_triggered()
