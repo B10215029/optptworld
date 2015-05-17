@@ -424,6 +424,7 @@ void MainWindow::on_pushButton_Quasi_clicked()
 
 void MainWindow::on_pushButton_Steep_clicked()
 {
+	ui->textBrowser->append("========<Steep Descent Method>========");
 	Vec X(initialPoint);
 	ui->textBrowser->append("X=("+QString::fromStdString(X.toString())+")\tf(X)="+QString::number(calculateFunction(f,X)));
 	QVector< QVector<term> > df;
