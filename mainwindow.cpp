@@ -126,7 +126,7 @@ void MainWindow::on_lineEdit_returnPressed()//input
 			QString termStr;
 			if(f[i].coefficient >= 0 && i != 0)
 				termStr += '+';
-			if(f[i].coefficient != 1)
+			if(f[i].coefficient != 1 || f[i].degrees[0] == 0 && f[i].degrees[1] == 0)
 				termStr += QString::number(f[i].coefficient);
 			if(f[i].degrees[0] != 0){
 				if(f[i].degrees[0] == 1)
@@ -333,14 +333,13 @@ void MainWindow::on_pushButton_Powell_clicked()
 	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
-Mat MainWindow::hessian(QVector<term>& func){
+Mat MainWindow::hessian(QVector<term>& func,Vec point){
 	Mat r(numberOfVar,numberOfVar);
 	for(int i=0;i<numberOfVar;++i){
 		QVector<term> di = diff(func, i);
 		for(int j=0;j<numberOfVar;++j){
 			QVector<term> dj = diff(di, j);
-			//助教說微兩次之後不會有變數的所以我就代0
-			r.setData(calculateFunction(dj, Vec(numberOfVar)), i, j);
+			r.setData(calculateFunction(dj, point), i, j);
 		}
 	}
 	return r;
@@ -352,9 +351,8 @@ void MainWindow::on_pushButton_Newton_clicked()
 	QVector<QVector<term>> df;
 	for(int i=0;i<numberOfVar;++i)
 		df.push_back(diff(f,i));
-	ui->textBrowser->append(QString::fromStdString(hessian(f).toString()));
-	Mat hessInv = hessian(f).Inverse();
 	while(1){
+		Mat hessInv = hessian(f, point).Inverse();
 		Vec dfx(numberOfVar);
 		for(int i=0;i<numberOfVar;++i)
 			dfx.setData(calculateFunction(df[i], point), i);
@@ -368,7 +366,36 @@ void MainWindow::on_pushButton_Newton_clicked()
 
 void MainWindow::on_pushButton_Quasi_clicked()
 {
-
+	Vec point = initialPoint;
+	QVector<QVector<term>> df;
+	for(int i=0;i<numberOfVar;++i)
+		df.push_back(diff(f,i));
+	Vec dfx(numberOfVar);
+	for(int i=0;i<numberOfVar;++i)
+		dfx.setData(calculateFunction(df[i], point), i);
+	Mat hess = Mat::identity(numberOfVar);
+	int it;
+	for(it=0;it<number_of_iterations;++it){
+		Vec hdfx = (hess * dfx).getColData(0)*-1;
+		QVector<term> fa = pIntoF(f, point, hdfx);
+		double alpha = goldenSection(fa, interval[0], interval[1]);
+		Vec xk1 = point + hdfx * alpha;
+		Vec dfxk1(numberOfVar);
+		for(int i=0;i<numberOfVar;++i)
+			dfxk1.setData(calculateFunction(df[i], xk1), i);
+		Mat dx(xk1-point);
+		Mat ddfx(dfxk1-dfx);
+		Mat a = (dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0);
+		Mat b = (hess*ddfx.trans()*ddfx*hess.trans())/(ddfx*hess*ddfx.trans()).getRowData(0).getData(0)*-1;
+		hess = hess + a + b;
+		dfx = dfxk1;
+		point = xk1;
+		if(dx.getRowData(0).norm() < epslon1)
+			break;
+	}
+	if(it==number_of_iterations)
+		ui->textBrowser->append("number_of_iterations!");
+	ui->textBrowser->append(QString::fromStdString(point.toString()));
 }
 
 void MainWindow::on_pushButton_Steep_clicked()
