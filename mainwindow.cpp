@@ -290,7 +290,7 @@ void MainWindow::on_pushButton_Golden_clicked()
 
 void MainWindow::on_pushButton_Powell_clicked()
 {
-	ui->textBrowser->append("========<Powell’s Method>========");
+	ui->textBrowser->append("========<Powell's Method>========");
 	Vec point(initialPoint);
 	QVector<Vec> s;//direction
 	s.push_back(Vec(2));
@@ -398,9 +398,14 @@ void MainWindow::on_pushButton_Quasi_clicked()
 			dfxk1.setData(calculateFunction(df[i], xk1), i);
 		Mat dx(xk1-point);
 		Mat ddfx(dfxk1-dfx);
+		//DFP
 		Mat a = (dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0);
 		Mat b = (hess*ddfx.trans()*ddfx*hess.trans())/(ddfx*hess*ddfx.trans()).getRowData(0).getData(0)*-1;
 		hess = hess + a + b;
+		//BFGS
+//		hess = hess - (hess*ddfx.trans()*dx+dx.trans()*ddfx*hess)/(dx*ddfx.trans()).getRowData(0).getData(0)
+//				+((dx.trans()*dx)/(dx*ddfx.trans()).getRowData(0).getData(0))*(1+((ddfx*hess*ddfx.trans())/(dx*ddfx.trans()).getRowData(0).getData(0)).getRowData(0).getData(0));
+		//////////
 		dfx = dfxk1;
 		point = xk1;
 		if(dx.getRowData(0).norm() < epslon1)
