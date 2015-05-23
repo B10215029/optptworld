@@ -257,6 +257,10 @@ QVector<term> MainWindow::pIntoF(QVector<term>& func,Vec& pos,Vec& dir){
 
 void MainWindow::on_pushButton_Golden_clicked()
 {
+	if(f.size()<=0){
+		ui->textBrowser->append("No input function!");
+		return;
+	}
 	double a = interval[0];
 	double b = interval[1];
 	double c1,c2,fc1,fc2,ba;
@@ -292,6 +296,10 @@ void MainWindow::on_pushButton_Golden_clicked()
 
 void MainWindow::on_pushButton_Powell_clicked()
 {
+	if(f.size()<=0){
+		ui->textBrowser->append("No input function!");
+		return;
+	}
 	ui->textBrowser->append("========<Powell's Method>========");
 	Vec point(initialPoint);
 	QVector<Vec> s;//direction
@@ -365,6 +373,10 @@ Mat MainWindow::hessian(QVector<term>& func,Vec point){
 
 void MainWindow::on_pushButton_Newton_clicked()
 {
+	if(f.size()<=0){
+		ui->textBrowser->append("No input function!");
+		return;
+	}
 	ui->textBrowser->append("========<Newton Method>========");
 	Vec point = initialPoint;
 	QVector< QVector<term> > df;
@@ -394,6 +406,10 @@ void MainWindow::on_pushButton_Newton_clicked()
 
 void MainWindow::on_pushButton_Quasi_clicked()
 {
+	if(f.size()<=0){
+		ui->textBrowser->append("No input function!");
+		return;
+	}
 	ui->textBrowser->append("========<Quasi-Newton Method>========");
 	if(ui->actionDFP->isChecked())
 		ui->textBrowser->append("========DFP========");
@@ -440,6 +456,10 @@ void MainWindow::on_pushButton_Quasi_clicked()
 
 void MainWindow::on_pushButton_Steep_clicked()
 {
+	if(f.size()<=0){
+		ui->textBrowser->append("No input function!");
+		return;
+	}
 	ui->textBrowser->append("========<Steep Descent Method>========");
 	Vec X(initialPoint);
 	ui->textBrowser->append("X=("+QString::fromStdString(X.toString())+")\tf(X)="+QString::number(calculateFunction(f,X)));
@@ -482,6 +502,10 @@ Vec MainWindow::deltaf(QVector< QVector<term> >& df,Vec& xi){
 
 void MainWindow::on_pushButton_Conjugate_clicked()
 {
+	if(f.size()<=0){
+		ui->textBrowser->append("No input function!");
+		return;
+	}
 	ui->textBrowser->append("========<Conjugate Gradient Method>========");
 	QVector<Vec> X,direction;
 	X.push_back(initialPoint);

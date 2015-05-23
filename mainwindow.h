@@ -32,6 +32,7 @@ public:
 	static QVector<term> pIntoF(QVector<term>& func,Vec& pos,Vec& dir);
 	static Mat hessian(QVector<term>& func, Vec point);
 	static QVector<term> diff(QVector<term> func,int xi);
+	static Vec deltaf(QVector< QVector<term> >& d2f,Vec& xi);
 
 private slots:
 	void on_lineEdit_returnPressed();
@@ -59,8 +60,6 @@ private:
 	QVector<term> f;
 	QVector<double> interval;
 	Vec initialPoint;
-
-	Vec deltaf(QVector< QVector<term> >& d2f,Vec& xi);
 };
 
 #endif // MAINWINDOW_H
